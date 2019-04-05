@@ -26,6 +26,7 @@ import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.common.{PartitionInfo, TopicPartition}
 import org.apache.kafka.common.requests.ListOffsetRequest
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
+import org.apache.kafka.common.utils.Utils
 
 import scala.collection.JavaConverters._
 
@@ -51,6 +52,11 @@ object GetOffsetShell {
                            .describedAs("timestamp/-1(latest)/-2(earliest)")
                            .ofType(classOf[java.lang.Long])
                            .defaultsTo(-1L)
+    val commandConfigOpt = parser.accepts("consumer.config", "Consumer config properties file")
+                          .withRequiredArg
+                          .describedAs("consumer config")
+                          .ofType(classOf[String])
+                          .defaultsTo("")
     parser.accepts("offsets", "DEPRECATED AND IGNORED: number of offsets returned")
                            .withRequiredArg
                            .describedAs("count")
@@ -89,7 +95,8 @@ object GetOffsetShell {
     }
     val listOffsetsTimestamp = options.valueOf(timeOpt).longValue
 
-    val config = new Properties
+    val consumerConfig = options.valueOf(commandConfigOpt)
+    val config = Option(consumerConfig).map(Utils.loadProps).getOrElse(new Properties())
     config.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerList)
     config.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, clientId)
     val consumer = new KafkaConsumer(config, new ByteArrayDeserializer, new ByteArrayDeserializer)
